@@ -1,0 +1,153 @@
+# =================================================================
+# Sourciq — CD Backend Pipeline
+# Triggers: merge to main (after CI gate passes)
+#
+# Flow:
+#   1. sam build — package FastAPI + Mangum into Lambda zip
+#   2. sam deploy — deploy/update Lambda + API Gateway via CloudFormation
+#   3. Smoke test the live Lambda HTTPS endpoint
+#   4. Auto-rollback if smoke test fails
+#
+# GitHub Secrets required:
+#   AWS_ACCESS_KEY_ID         IAM user documind-deploy
+#   AWS_SECRET_ACCESS_KEY     IAM user documind-deploy
+#   AWS_REGION                e.g. us-east-1
+#   ANTHROPIC_API_KEY         sk-ant-...
+#   PINECONE_API_KEY          ...
+#   VOYAGE_API_KEY            ...
+#   COHERE_API_KEY            ...
+#   DATABASE_URL              postgresql://...?sslmode=require
+#   GOOGLE_CLIENT_ID          ...apps.googleusercontent.com
+#   ALLOWED_ORIGINS           https://your-app.vercel.app
+#   LANGFUSE_PUBLIC_KEY       pk-lf-...
+#   LANGFUSE_SECRET_KEY       sk-lf-...
+# =================================================================
+
+name: CD — Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/cd-backend.yml"
+  workflow_dispatch:     # manual trigger from GitHub UI
+
+concurrency:
+  group:              cd-backend-prod
+  cancel-in-progress: false   # never cancel a deploy mid-flight
+
+jobs:
+  deploy-backend:
+    name: "Deploy backend to Lambda"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: []            # CI gate checked on push to main already
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ secrets.AWS_REGION }}
+
+      - name: Install SAM CLI
+        run: pip install aws-sam-cli --quiet
+
+      - name: SAM build
+        run: |
+          cd backend
+          sam build \
+            --template-file template.yaml \
+            --manifest requirements-lambda.txt \
+            --use-container \
+            --build-image public.ecr.aws/sam/build-python3.12
+
+      - name: SAM deploy
+        run: |
+          cd backend
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --stack-name documind-prod \
+            --region ${{ secrets.AWS_REGION }} \
+            --capabilities CAPABILITY_IAM \
+            --parameter-overrides \
+              Environment=prod \
+              AnthropicApiKey="${{ secrets.ANTHROPIC_API_KEY }}" \
+              PineconeApiKey="${{ secrets.PINECONE_API_KEY }}" \
+              VoyageApiKey="${{ secrets.VOYAGE_API_KEY }}" \
+              CohereApiKey="${{ secrets.COHERE_API_KEY }}" \
+              DatabaseUrl="${{ secrets.DATABASE_URL }}" \
+              GoogleClientId="${{ secrets.GOOGLE_CLIENT_ID }}" \
+              AllowedOrigins="${{ secrets.ALLOWED_ORIGINS }}" \
+              LangfusePublicKey="${{ secrets.LANGFUSE_PUBLIC_KEY }}" \
+              LangfuseSecretKey="${{ secrets.LANGFUSE_SECRET_KEY }}"
+
+      - name: Get Lambda URL from CloudFormation outputs
+        id: get-url
+        run: |
+          URL=$(aws cloudformation describe-stacks \
+            --stack-name documind-prod \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiEndpoint'].OutputValue" \
+            --output text)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Lambda URL: $URL"
+
+      - name: Smoke test — health check
+        run: |
+          URL="${{ steps.get-url.outputs.url }}"
+          echo "Testing $URL/health ..."
+          for i in $(seq 1 6); do
+            RESP=$(curl -sf --max-time 10 "$URL/health" 2>/dev/null || echo "")
+            if echo "$RESP" | python3 -c "import sys,json; d=json.load(sys.stdin); sys.exit(0 if d.get('status')=='healthy' else 1)" 2>/dev/null; then
+              echo "Health check passed: $RESP"
+              exit 0
+            fi
+            echo "  Attempt $i/6 — waiting 10s..."
+            sleep 10
+          done
+          echo "Health check failed after 60s"
+          exit 1
+
+      - name: Smoke test — auth required on /api/query
+        run: |
+          URL="${{ steps.get-url.outputs.url }}"
+          STATUS=$(curl -so /dev/null -w "%{http_code}" \
+            -X POST "$URL/api/query" \
+            -H "Content-Type: application/json" \
+            -d '{"question":"test","namespace":"kubernetes-docs"}')
+          echo "Unauthenticated query status: $STATUS"
+          if [ "$STATUS" != "401" ]; then
+            echo "Expected 401, got $STATUS — auth may be broken"
+            exit 1
+          fi
+          echo "Auth enforcement verified"
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deployment failed — rolling back to previous version"
+          aws cloudformation rollback-stack \
+            --stack-name documind-prod \
+            --region ${{ secrets.AWS_REGION }} || true
+
+      - name: Deployment summary
+        if: success()
+        run: |
+          echo "================================================"
+          echo "  Sourciq backend deployed"
+          echo "  URL: ${{ steps.get-url.outputs.url }}"
+          echo "  SHA: ${{ github.sha }}"
+          echo "================================================"

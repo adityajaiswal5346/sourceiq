@@ -1,0 +1,17 @@
+# Post-build pruning for Lambda package size (run after `sam build` if needed).
+# ONLY list packages safe to remove on Lambda python3.12:
+#   - boto3/botocore are already in the Lambda runtime
+#
+# NEVER exclude runtime imports required by cohere/voyageai/pinecone:
+#   sagemaker, tokenizers, huggingface_hub, numpy, aiohttp
+
+boto3
+boto3-*
+botocore
+botocore-*
+s3transfer
+s3transfer-*
+
+# Unused transitive weight (not imported by DocuMind)
+pandas
+pandas-*

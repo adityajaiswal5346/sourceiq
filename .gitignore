@@ -1,0 +1,42 @@
+# ── Secrets (never commit) ───────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Python ───────────────────────────────────────────────────────
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+.coverage
+htmlcov/
+
+# ── AWS SAM (sam build — thousands of vendored deps) ─────────────
+.aws-sam/
+**/.aws-sam/
+samconfig.toml.bak
+packaged.yaml
+packaged.yml
+*.zip
+
+# ── Frontend (npm) ───────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+
+# ── Vercel (local link metadata) ─────────────────────────────────
+.vercel/
+
+# ── Demo corpus (large binaries) ─────────────────────────────────
+docs/*.pdf
+docs/*.md.gz
+
+# ── OS / editor ──────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.vercel/

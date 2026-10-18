@@ -1,0 +1,16 @@
+# CI and local dev — install after requirements.txt:
+#   pip install -r backend/requirements.txt -r backend/requirements-dev.txt
+
+-r requirements.txt
+
+ruff==0.6.9
+pytest==8.3.3
+pytest-asyncio==0.24.0
+
+
+# Development and evaluation dependencies
+# Not deployed to Lambda (voyageai is already in requirements.txt)
+ragas==0.1.21
+datasets
+langchain-anthropic
+langchain-community

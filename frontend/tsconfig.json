@@ -1,0 +1,33 @@
+{
+  "compilerOptions": {
+    "target":                    "ES2022",
+    "lib":                       ["ES2022", "DOM", "DOM.Iterable"],
+    "module":                    "ESNext",
+    "skipLibCheck":              true,
+    "moduleResolution":          "bundler",
+    "types":                     ["vite/client"],
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule":         true,
+    "isolatedModules":           true,
+    "noEmit":                    true,
+    "jsx":                       "react-jsx",
+
+    /* Strict flags — all on */
+    "strict":                    true,
+    "noImplicitAny":             true,
+    "strictNullChecks":          true,
+    "strictFunctionTypes":       true,
+    "strictBindCallApply":       true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis":            true,
+    "useUnknownInCatchVariables": true,
+
+    /* Additional checks */
+    "noUnusedLocals":            true,
+    "noUnusedParameters":        true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess":  true,
+    "exactOptionalPropertyTypes": true
+  },
+  "include": ["src"]
+}

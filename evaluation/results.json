@@ -1,0 +1,31 @@
+{
+  "evaluated_at": "2026-06-02T12:35:56.592512+00:00",
+  "corpus": [
+    "pods.md",
+    "configmaps.md"
+  ],
+  "num_questions": 3,
+  "scores": {
+    "faithfulness": 0.4062,
+    "answer_relevancy": 0.0,
+    "context_precision": 0.6019,
+    "context_recall": 0.5556
+  },
+  "per_question": [
+    {
+      "question": "What is a Kubernetes Pod?",
+      "answer": "A Kubernetes Pod is the smallest deployable unit of computing that you can create and manage in Kubernetes [3]. \n\nA Pod is a group of one or more containers, with shared storage and network resources, and a specification for how to run the containers [3]. The Pod's contents are always co-located and co-scheduled, and run in a shared context [3]. It models an application-specific \"logical host\" containing one or more application containers which are relatively tightly coupled [3].\n\nThe shared context of a Pod is a set of Linux namespaces, cgroups, and potentially other facets of isolation - the same things that isolate a container [1]. A Pod is similar to a set of containers with shared namespaces and shared filesystem volumes [1].\n\nPods are used in two main ways [1][4]:\n\n* **Pods that run a single container** - The \"one-container-per-Pod\" model is the most common Kubernetes use case; you can think of a Pod as a wrapper around a single container; Kubernetes manages Pods rather than managing the containers directly [1][4].\n\n* **Pods that run multiple containers that need to work together** - A Pod can encapsulate an application composed of multiple co-located containers that are tightly coupled and need to share resources [1][4]. These containers are automatically co-located and co-scheduled on the same physical or virtual machine in the cluster [4].\n\nPods are designed as relatively ephemeral, disposable entities [5]. You need to install a container runtime into each node in the cluster so that Pods can run there [1].",
+      "ground_truth": "A Pod is the smallest deployable unit in Kubernetes. It represents a single instance of a running process in a cluster and can contain one or more containers that share storage and network resources."
+    },
+    {
+      "question": "What is the difference between a Pod and a container?",
+      "answer": "A Pod and a container differ in the following ways:\n\n**Container**: A container is a single unit of software packaging that includes application code and its dependencies[1].\n\n**Pod**: A Pod is a group of one or more containers, with shared storage and network resources, and a specification for how to run the containers[1]. A Pod models an application-specific \"logical host\"[1].\n\nKey differences:\n\n1. **Scope**: Containers are individual units, while Pods are groups that can contain one or more containers[1].\n\n2. **Shared resources**: Within a Pod, containers share a network namespace (including the IP address and network ports)[3], can communicate using `localhost`[3], share an IP address and port space[3], and can use standard inter-process communications like SystemV semaphores or POSIX shared memory[3]. Containers in different Pods have distinct IP addresses and cannot communicate by OS-level IPC without special configuration[3].\n\n3. **Management**: Kubernetes manages Pods rather than managing containers directly[2][4].\n\n4. **Context**: The shared context of a Pod is a set of Linux namespaces, cgroups, and potentially other facets of isolation[2]. A Pod is similar to a set of containers with shared namespaces and shared filesystem volumes[2].\n\n5. **Co-location**: A Pod's contents are always co-located and co-scheduled, and run in a shared context[1]. The containers in a Pod are automatically co-located and co-scheduled on the same physical or virtual machine in the cluster[4].",
+      "ground_truth": "A container is a single isolated process with its own filesystem. A Pod is a Kubernetes abstraction that wraps one or more containers, giving them shared network and storage. Containers in the same Pod communicate via localhost and share the same IP address."
+    },
+    {
+      "question": "What is terminationGracePeriodSeconds and what is its default value?",
+      "answer": "Retrieved context confidence (0.00) is below the minimum threshold (0.25). The documentation does not appear to contain a reliable answer.",
+      "ground_truth": "terminationGracePeriodSeconds is the duration in seconds that Kubernetes waits after sending SIGTERM before forcefully killing a container with SIGKILL. The default value is 30 seconds."
+    }
+  ]
+}

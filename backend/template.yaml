@@ -1,0 +1,184 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Description: >
+  DocuMind — Production RAG API on AWS Lambda
+  FastAPI app wrapped with Mangum ASGI adapter.
+  API Gateway handles HTTPS, Lambda handles compute.
+
+Globals:
+  Function:
+    Timeout:     30
+    MemorySize:  512
+    Runtime:     python3.12
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+
+Parameters:
+  Environment:
+    Type:    String
+    Default: prod
+    AllowedValues: [prod, staging]
+
+  AnthropicApiKey:
+    Type:      String
+    NoEcho:    true
+    Description: Anthropic API key
+
+  PineconeApiKey:
+    Type:      String
+    NoEcho:    true
+
+  VoyageApiKey:
+    Type:      String
+    NoEcho:    true
+
+  CohereApiKey:
+    Type:      String
+    NoEcho:    true
+
+  DatabaseUrl:
+    Type:      String
+    NoEcho:    true
+    Description: Neon PostgreSQL connection string
+
+  GoogleClientId:
+    Type:      String
+    NoEcho:    true
+
+  AllowedOrigins:
+    Type:      String
+    Default:   "https://documind.vercel.app"
+    Description: Comma-separated CORS allowed origins
+
+  LangfusePublicKey:
+    Type:   String
+    NoEcho: true
+  LangfuseSecretKey:
+    Type:   String
+    NoEcho: true
+
+Resources:
+
+  # ── Lambda function ──────────────────────────────────────────────
+  DocuMindApi:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: python3.12
+      BuildProperties:
+        RequirementsFile: requirements-lambda.txt
+    Properties:
+      FunctionName: !Sub "documind-api-${Environment}"
+      CodeUri:      .
+      Handler:      lambda_handler.handler
+      Description:  DocuMind RAG API — FastAPI via Mangum
+
+      Environment:
+        Variables:
+          API_STAGE:         !Ref Environment
+          ANTHROPIC_API_KEY: !Ref AnthropicApiKey
+          PINECONE_API_KEY:  !Ref PineconeApiKey
+          PINECONE_INDEX:    documind
+          VOYAGE_API_KEY:    !Ref VoyageApiKey
+          VOYAGE_MODEL:      voyage-2
+          COHERE_API_KEY:    !Ref CohereApiKey
+          COHERE_MODEL:      rerank-english-v3.0
+          DATABASE_URL:      !Ref DatabaseUrl
+          GOOGLE_CLIENT_ID:  !Ref GoogleClientId
+          ALLOWED_ORIGINS:   !Ref AllowedOrigins
+          LANGFUSE_PUBLIC_KEY:  !Ref LangfusePublicKey
+          LANGFUSE_SECRET_KEY:  !Ref LangfuseSecretKey
+          LANGFUSE_BASE_URL:    https://cloud.langfuse.com
+          CONFIDENCE_THRESHOLD: "0.6"
+          TRUSTED_HOSTS:     "*"
+          HYBRID_ALPHA:      "0.7"
+          TOP_K_RETRIEVAL:   "10"
+          TOP_K_RERANK:      "5"
+          CHUNK_SIZE:        "800"
+          CHUNK_OVERLAP:     "100"
+
+      Events:
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DocuMindHttpApi
+            Path:  /{proxy+}
+            Method: ANY
+
+        HealthCheck:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref DocuMindHttpApi
+            Path:  /health
+            Method: GET
+
+      Policies:
+        - AWSLambdaBasicExecutionRole
+
+  # ── API Gateway HTTP API ─────────────────────────────────────────
+  DocuMindHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Environment
+      Description: DocuMind RAG API Gateway
+      CorsConfiguration:
+        AllowOrigins:  !Split [",", !Ref AllowedOrigins]
+        AllowMethods:  [GET, POST, OPTIONS]
+        AllowHeaders:  [Content-Type, Authorization]
+        MaxAge:        600
+
+  # ── CloudWatch Log Group ─────────────────────────────────────────
+  DocuMindLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:    !Sub "/aws/lambda/documind-api-${Environment}"
+      RetentionInDays: 14
+
+  # ── CloudWatch Alarm — Lambda errors ─────────────────────────────
+  LambdaErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:          !Sub "documind-${Environment}-lambda-errors"
+      AlarmDescription:   Lambda error rate > 5 in 5 minutes
+      MetricName:         Errors
+      Namespace:          AWS/Lambda
+      Dimensions:
+        - Name:  FunctionName
+          Value: !Ref DocuMindApi
+      Statistic:          Sum
+      Period:             300
+      EvaluationPeriods:  1
+      Threshold:          5
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData:   notBreaching
+
+  # ── CloudWatch Alarm — p95 latency > 5s ─────────────────────────
+  LatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName:          !Sub "documind-${Environment}-high-latency"
+      AlarmDescription:   p95 Lambda duration > 5000ms
+      MetricName:         Duration
+      Namespace:          AWS/Lambda
+      Dimensions:
+        - Name:  FunctionName
+          Value: !Ref DocuMindApi
+      ExtendedStatistic:  p95
+      Period:             300
+      EvaluationPeriods:  2
+      Threshold:          5000
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData:   notBreaching
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value: !Sub "https://${DocuMindHttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}"
+    Export:
+      Name: !Sub "DocuMindApiEndpoint-${Environment}"
+
+  LambdaArn:
+    Description: Lambda function ARN
+    Value: !GetAtt DocuMindApi.Arn
