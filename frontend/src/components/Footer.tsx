@@ -2,7 +2,7 @@
  * DocuMind — Copyright (positioned by parent; no layout footprint).
  */
 
-const COPYRIGHT_HOLDER = "Atti Rehman";
+const COPYRIGHT_HOLDER = "Aditya Jaiswal";
 
 export default function Footer({ className = "" }: { className?: string }) {
   const year = new Date().getFullYear();

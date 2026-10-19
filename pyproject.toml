@@ -15,3 +15,10 @@ target-version = "py312"
 select = ["E", "F", "I", "W"]
 ignore = ["E501"]
 
+[tool.pyright]
+include = ["backend", "tests"]
+extraPaths = ["backend"]
+venvPath = "."
+venv = ".venv"
+
+

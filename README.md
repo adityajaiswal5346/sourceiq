@@ -11,16 +11,16 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/AttiR/Sourciq/actions/workflows/ci.yml">
-    <img src="https://github.com/AttiR/Sourciq/actions/workflows/ci.yml/badge.svg" alt="CI"/>
+  <a href="https://https://github.com/adityajaiswal5346/sourceiq/actions/workflows/ci.yml">
+    <img src="https://https://github.com/adityajaiswal5346/sourceiq/actions/workflows/ci.yml/badge.svg" alt="CI"/>
   </a>
-  <a href="https://github.com/AttiR/Sourciq/actions/workflows/cd-backend.yml">
-    <img src="https://github.com/AttiR/Sourciq/actions/workflows/cd-backend.yml/badge.svg" alt="CD Backend"/>
+  <a href="https://https://github.com/adityajaiswal5346/sourceiq/actions/workflows/cd-backend.yml">
+    <img src="https://https://github.com/adityajaiswal5346/sourceiq/actions/workflows/cd-backend.yml/badge.svg" alt="CD Backend"/>
   </a>
-  <a href="https://github.com/AttiR/Sourciq/actions/workflows/cd-frontend.yml">
-    <img src="https://github.com/AttiR/Sourciq/actions/workflows/cd-frontend.yml/badge.svg" alt="CD Frontend"/>
+  <a href="https://https://github.com/adityajaiswal5346/sourceiq/actions/workflows/cd-frontend.yml">
+    <img src="https://https://github.com/adityajaiswal5346/sourceiq/actions/workflows/cd-frontend.yml/badge.svg" alt="CD Frontend"/>
   </a>
-  <a href="https://github.com/AttiR/Sourciq/actions/workflows/ci.yml">
+  <a href="https://https://github.com/adityajaiswal5346/sourceiq/actions/workflows/ci.yml">
     <img src="https://img.shields.io/badge/RAGAS-PR_gated-6366f1?style=flat" alt="RAGAS CI"/>
   </a>
   <img src="https://img.shields.io/badge/RAG-Production_Grade-6366f1?style=flat" alt="RAG"/>
@@ -318,8 +318,8 @@ samconfig.toml            GOOGLE_CLIENT_ID               GOOGLE_CLIENT_ID
 **Prerequisites:** Python 3.12, Node 20, API keys for Anthropic, Pinecone, Voyage AI, Cohere, Langfuse (public + secret key), Google OAuth client ID, Neon Postgres connection string.
 
 ```bash
-git clone https://github.com/AttiR/Sourciq
-cd Sourciq
+git clone https://github.com/adityajaiswal5346/sourciq
+cd sourciq
 
 # Backend
 python3.12 -m venv venv && source venv/bin/activate
@@ -477,4 +477,4 @@ Returns user profile including `queries_remaining`.
 
 ---
 
-*Built by Atti Rehman &nbsp;·&nbsp; [LinkedIn](https://www.linkedin.com/in/attirehman/) &nbsp;·&nbsp; [GitHub](https://github.com/AttiR)*
+*Built by Aditya Jaiswal &nbsp;·&nbsp;[GitHub](https://github.com/adityajaiswal5346)*

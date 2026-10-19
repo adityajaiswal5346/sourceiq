@@ -18,7 +18,8 @@ Lifespan note:
 
 import os
 
-from main import app
+# pyrefly: ignore[missing-import]
+from app.main import app
 from mangum import Mangum
 
 # HTTP API URLs include the stage: .../prod/health
